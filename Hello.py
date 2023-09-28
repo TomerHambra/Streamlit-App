@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 from selenium import webdriver
+from selenium.webdriver import FirefoxOptions
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
