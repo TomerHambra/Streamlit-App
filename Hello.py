@@ -31,9 +31,13 @@ def run():
 
         
         url = 'https://beitbiram.iscool.co.il/default.aspx'
-        opts = FirefoxOptions()
-        opts.add_argument("--headless")
-        browser = webdriver.Firefox(options=opts)
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.set_capability("browserVersion", "67")
+        chrome_options.set_capability("platformName", "Windows XP")
+        browser = webdriver.Remote(
+            command_executor='http://172.17.1.218:4444',
+            options=chrome_options
+        )
         
         browser.get(url)
         grade = '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]/option['
