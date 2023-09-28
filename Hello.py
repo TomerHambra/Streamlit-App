@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 from selenium import webdriver
-from selenium.webdriver import FirefoxOptions
+from selenium.webdriver import ChromeOptions
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
@@ -31,12 +31,8 @@ def run():
 
         
         url = 'https://beitbiram.iscool.co.il/default.aspx'
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.set_capability("browserVersion", "67")
-        chrome_options.set_capability("platformName", "Windows XP")
         browser = webdriver.Remote(
-            command_executor='http://172.17.1.218:4444',
-            options=chrome_options
+            command_executor='http://172.17.1.218:4444'
         )
         
         browser.get(url)
