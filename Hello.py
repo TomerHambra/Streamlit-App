@@ -36,7 +36,7 @@ def run():
         chrome_options.set_capability("browserVersion", "117.0")
         chrome_options.set_capability("platformName", "linux")
         browser = webdriver.Remote(
-            command_executor='http://www.example.com',
+            command_executor='http://172.17.1.218:4444',
             desired_capabilities={"browserName":"chrome","browserVersion":"117.0","platformName":"linux","se:noVncPort":7900,"se:vncEnabled":True}
         )
         
