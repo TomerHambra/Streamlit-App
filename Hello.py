@@ -31,8 +31,12 @@ def run():
 
         
         url = 'https://beitbiram.iscool.co.il/default.aspx'
-        browser = webdriver.Remote(
-            command_executor='http://172.17.1.218:4444'
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.set_capability("browserVersion", "117.0")
+        chrome_options.set_capability("platformName", "linux")
+        vrower = webdriver.Remote(
+            command_executor='http://www.example.com',
+            options=chrome_options
         )
         
         browser.get(url)
