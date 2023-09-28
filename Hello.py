@@ -30,6 +30,9 @@ def run():
 
         
         url = 'https://beitbiram.iscool.co.il/default.aspx'
+        options = FirefoxOptions()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
         browser = webdriver.Firefox()
         
         browser.get(url)
