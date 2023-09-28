@@ -33,7 +33,7 @@ def run():
         url = 'https://beitbiram.iscool.co.il/default.aspx'
         opts = FirefoxOptions()
         opts.add_argument("--headless")
-        browser = webdriver.Firefox(executable_path='./geckodriver', options=opts)
+        browser = webdriver.Firefox(options=opts)
         
         browser.get(url)
         grade = '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]/option['
