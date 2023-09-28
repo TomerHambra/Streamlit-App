@@ -28,7 +28,7 @@ def run():
         if hour == 15:
             hour = 0
         url = 'https://beitbiram.iscool.co.il/default.aspx'
-        browser = webdriver.Chrome('/__internal/')
+        browser = webdriver.Chrome()
         browser.get(url)
         grade = '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]/option['
     
