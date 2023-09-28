@@ -4,3 +4,4 @@ pandas==2.0.3
 pydeck==0.8.0
 streamlit==1.25.0
 selenium==4.13.0
+chromedriver==76.0.3809.25
