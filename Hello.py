@@ -5,6 +5,7 @@ from selenium.webdriver import ChromeOptions
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 def run():
     
