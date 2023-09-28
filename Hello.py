@@ -30,7 +30,7 @@ def run():
 
         
         url = 'https://beitbiram.iscool.co.il/default.aspx'
-        browser = webdriver.Chrome()
+        browser = webdriver.FireFox()
         
         browser.get(url)
         grade = '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]/option['
