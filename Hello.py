@@ -32,6 +32,7 @@ def run():
 
         url = 'https://beitbiram.iscool.co.il/default.aspx'
         chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_experimental_option("detach", True)
         chrome_options.set_capability("browserVersion", "117.0")
         chrome_options.set_capability("platformName", "linux")
         browser = webdriver.Remote(
