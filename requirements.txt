@@ -2,5 +2,7 @@ altair==5.0.1
 numpy==1.25.1
 pandas==2.0.3
 pydeck==0.8.0
-streamlit==1.25.0
-selenium==4.13.0
+streamlit==1.27.1
+httpx==0.25.0
+bs4
+lxml
