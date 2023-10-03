@@ -100,7 +100,7 @@ def run():
     ### Info to fill 
     """
     dicter = {
-        'Sunday': 1, 'Monday': 2, 'Tuesday': 3, 'Wednesday': 4, 'Thursday': 5, 'Friday': 6, 'Saturday': 6
+        'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     }
     dicter2 = {
         '07:20 - 08:00': 15, '08:00 - 08:45': 1, '08:45 - 09:30': 2, '09:45 - 10:30': 3, '10:30 - 11:15': 4,
@@ -114,15 +114,19 @@ def run():
     if day and hour:
         if hour == 15:
             hour = 0
+        if day == 15:
+            day = 0
 
         with st.spinner("Fetching Data..."):
             htmls = asyncio.run(download_htmls())
         with st.spinner('Analysing Data...'):
             rooms = sorted(get_available_classes_on_date(htmls, day, hour))
-        st.info('Program found {} rooms available: \n\n {}'.format(len(rooms), '\n' + '  |  '.join(rooms)))
+        st.info('Program found {} rooms available: \n\n {}'.format(len(rooms), '\n - '.join(rooms)))
 
         if hour == 0:
             hour = 15
+        if day == 0:
+            day = 15
 
 if __name__ == '__main__':
     run()
