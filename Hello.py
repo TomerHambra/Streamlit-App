@@ -1,12 +1,97 @@
-import os
 import streamlit as st
-from selenium import webdriver
-from selenium.webdriver import ChromeOptions
-from selenium.common import NoSuchElementException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.select import Select
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import asyncio
+from datetime import date, datetime
 
+import httpx
+from bs4 import BeautifulSoup, Tag
+
+BASE_URL = "https://beitbiram.iscool.co.il/default.aspx"
+
+
+async def get_initial_form_data(
+    client: httpx.AsyncClient,
+) -> tuple[dict[str, str], list[str]]:
+    response = await client.get(BASE_URL)
+    soup = BeautifulSoup(response.text, "lxml")
+
+    tags = {
+        tag["id"]: tag.get("value")
+        for tag in soup.find_all("input")
+        if tag.get("value") is not None
+    }
+    class_ids = [option.get("value") for option in soup.find_all("option")]
+    return tags, class_ids
+
+
+async def get_class_data(
+    client: httpx.AsyncClient,
+    tags: dict[str, str],
+    class_id: str,
+    htmls: dict[str, str],
+):
+    tags = tags.copy()
+    tags.update(
+        {
+            "dnn$ctr7126$TimeTableView$ClassesList": class_id,
+            "dnn$ctr7126$TimeTableView$ControlId": "8",
+        }
+    )
+
+    response = await client.post(BASE_URL, data=tags, headers={"encoding": "utf8"})
+    htmls[class_id] = response.text
+
+
+def get_class_name_from_lesson(lesson_tag: Tag) -> str:
+    klass = lesson_tag.find("b").next_sibling.text.strip()[1:-1]
+    return klass
+
+
+def get_all_class_names(html: str) -> set[str]:
+    soup = BeautifulSoup(html, "lxml")
+    return {
+        get_class_name_from_lesson(tag)
+        for tag in soup.find_all("div", {"class": "TTLesson"})
+    }
+
+
+def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
+    soup = BeautifulSoup(html, "lxml")
+    table = soup.find("table", {"class": "TTTable"})
+
+    row = table.find_all("tr")[hour + 1]
+    cells = row.find_all("td", {"class": "TTCell"})
+    cell = cells[day]
+
+    return {
+        get_class_name_from_lesson(lesson)
+        for lesson in cell.find_all("div", {"class": "TTLesson"})
+    }
+
+
+def get_available_classes_on_date(
+    htmls: dict[str, str], day: int, hour: int
+) -> set[str]:
+    available_classes = set().union(
+        *(get_all_class_names(html) for html in htmls.values())
+    )
+    for klass, html in htmls.items():
+        taken_classes = get_taken_classes_on_date(html, day, hour)
+        print(f"Class {klass} took rooms {taken_classes}")
+        available_classes -= taken_classes
+    return available_classes
+
+
+async def download_htmls() -> dict[str, str]:
+    async with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
+        tags, class_ids = await get_initial_form_data(client)
+        client.cookies.clear()
+
+        htmls = dict[str, str]()
+        async with asyncio.TaskGroup() as tg:
+            for class_id in class_ids:
+                tg.create_task(get_class_data(client, tags, class_id, htmls))
+
+        return htmls
 
 def run():
     st.title('Room Finder')
@@ -30,70 +115,14 @@ def run():
         if hour == 15:
             hour = 0
 
-        url = 'https://beitbiram.iscool.co.il/default.aspx'
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_experimental_option("detach", True)
-        chrome_options.set_capability("browserVersion", "117.0")
-        chrome_options.set_capability("platformName", "linux")
-        browser = webdriver.Remote(
-            command_executor='http://172.17.1.218:4444/wd/hub',
-            options=chrome_options
-        )
-
-        browser.get(url)
-        grade = '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]/option['
-
-        table = '//*[@id="dnn_ctr7126_TimeTableView_PlaceHolder"]/div/table/tbody/tr[{}]/td[{}]' \
-            .format(str(hour + 2), str(day + 1))
-        rooms = {
-            '111': False, '112': False, '113': False, '114': False, '121': False, '122': False, '123': False,
-            '124': False,
-            '210': False, '211': False, '212': False, '213': False, '214': False, '220': False, '221': False,
-            '222': False,
-            '223': False, '224': False, '230': False, '234': False, '311': False, '312': False, '313': False,
-            '321': False,
-            '322': False, '323': False, '411': False, '412': False, '413': False, '421': False, '422': False,
-            '423': False,
-            '424': False, '425': False, '426': False, '427': False, '428': False, '501': False, '502': False,
-            '503': False,
-            '504': False, '511': False, '512': False, '513': False, '514': False, '515': False, '516': False,
-            '517': False
-        }
-
-        browser.find_element(By.XPATH, '//*[@id="dnn_ctr7126_TimeTableView_TdChangesTable"]').click()
-        browser.find_element(By.XPATH, '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]').click()
-        select = browser.find_element(By.XPATH, '//*[@id="dnn_ctr7126_TimeTableView_ClassesList"]')
-        selector = Select(select)
-        options = selector.options
-        c = len(rooms)
-        with st.spinner("Please wait..."):
-            for i in range(len(options)):
-                browser.find_element(By.XPATH, grade + str(i + 1) + ']').click()
-
-                j = 1
-                while True:
-                    try:
-                        current = browser.find_element(By.XPATH, table + '/div[' + str(j) + ']')
-                        info = current.text
-                        if '(' in info and ')' in info:
-                            room = info[info.index('(') + 1: info.index(')')]
-                            if room in rooms.keys():
-                                if not rooms[room]:
-                                    c -= 1
-                                rooms[room] = True
-                        j += 1
-                    except NoSuchElementException:
-                        break
-
-        s = ""
-        for r in rooms:
-            if not rooms[r]:
-                s += r + " "
-        st.info('Program found {} rooms available: \n\n {}'.format(c, '\n' + s))
+        with st.spinner("Fetching Data..."):
+            htmls = asyncio.run(download_htmls())
+        with st.spinner('Analysing Data...'):
+            rooms = sorted(get_available_classes_on_date(htmls, day, hour))
+        st.info('Program found {} rooms available: \n\n {}'.format(len(rooms), '\n' + '  |  '.join(rooms)))
 
         if hour == 0:
             hour = 15
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     run()
