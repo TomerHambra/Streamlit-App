@@ -121,7 +121,7 @@ def run():
             htmls = asyncio.run(download_htmls())
         with st.spinner('Analysing Data...'):
             rooms = sorted(get_available_classes_on_date(htmls, day, hour))
-        st.info('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms)))
+        st.info('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
         if hour == 0:
             hour = 15
