@@ -77,7 +77,7 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int) -> set[
     with bar:
         for html in htmls:
             available_classes -= get_taken_classes_on_date(html, day, hour)
-            bar.progress(i*100//n)
+            bar.progress(i*100//n, 'Analysing Data...')
             i += 1
         bar.empty()
     
