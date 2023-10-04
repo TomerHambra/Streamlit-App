@@ -4,7 +4,7 @@
 
 
 ## Contributors
-Roy Sigman
-Ilay Nadler
-Alon Krymgand
-Tomer Hambra
+ - Roy Sigman
+ - Ilay Nadler
+ - Alon Krymgand
+ - Tomer Hambra
