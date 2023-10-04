@@ -134,10 +134,15 @@ def run():
             day = 0
 
         with st.spinner("Fetching Data..."):
-            htmls = asyncio.run(download_htmls())
-        bar = st.progress(0, 'Analysing Data...')
-        rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
-        st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+            try:
+                htmls = asyncio.run(download_htmls())
+            except httpx.ConnectTimeout:
+                st.error('Site Is Unavailable (it\'s not our fault).')
+                unavailable_site_error = True
+        while not unavailable_site_error:    
+            bar = st.progress(0, 'Analysing Data...')
+            rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
+            st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
         if hour == 0:
             hour = 15
