@@ -70,7 +70,7 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
 def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
     available_classes = set().union(
         *(get_all_class_names(html) for html in htmls)
-    ) 
+    ) # NOTE: this function is slow af, need to fix it
     n = len(htmls)
     i = 1
     with bar:
