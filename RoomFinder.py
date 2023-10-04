@@ -68,15 +68,17 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
     }
 
 # THIS FUNCTIONS IS A BIT FASTER
-def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
+def get_available_classes_on_date(htmls: list[str], day: int, hour: int) -> set[str]:
     available_classes = set().union(
         *(get_all_class_names(html) for html in htmls)
     ) 
     n = len(htmls)
     i = 1
-    for html in htmls:
-        available_classes -= get_taken_classes_on_date(html, day, hour)
-        bar.progress(i*100//n) 
+    bar = st.progress(0, text='Analysing Data...')
+    with bar:
+        for html in htmls:
+            available_classes -= get_taken_classes_on_date(html, day, hour)
+            bar.progress(i*100//n) 
     return available_classes
 
 #
@@ -132,9 +134,8 @@ def run():
 
         with st.spinner("Fetching Data..."):
             htmls = asyncio.run(download_htmls())
-        bar = st.progress(0, text='Analysing Data...')
-        with bar:
-            rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
+        
+        rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour))
         st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
         if hour == 0:
