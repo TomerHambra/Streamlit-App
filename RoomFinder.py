@@ -67,18 +67,31 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
         for lesson in cell.find_all("div", {"class": "TTLesson"})
     }
 
-
-def get_available_classes_on_date(
-    htmls: dict[str, str], day: int, hour: int
-) -> set[str]:
+# THIS FUNCTIONS IS A BIT FASTER
+def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
     available_classes = set().union(
-        *(get_all_class_names(html) for html in htmls.values())
-    )
-    for klass, html in htmls.items():
-        taken_classes = get_taken_classes_on_date(html, day, hour)
-        print(f"Class {klass} took rooms {taken_classes}")
-        available_classes -= taken_classes
+        *(get_all_class_names(html) for html in htmls)
+    ) 
+    n = len(htmls)
+    i = 1
+    for html in htmls:
+        available_classes -= get_taken_classes_on_date(html, day, hour)
+        bar.progress(i*100//n) 
     return available_classes
+
+#
+# FUNCTION IS SLOW BECAUSE OF DICTS AND FINDING FUNKY KLASSES
+#def get_available_classes_on_date(
+#    htmls: dict[str, str], day: int, hour: int
+#) -> set[str]:
+#    available_classes = set().union(
+#        *(get_all_class_names(html) for html in htmls.values())
+#    )
+#    for klass, html in htmls.items():
+#        taken_classes = get_taken_classes_on_date(html, day, hour)
+#        print(f"Class {klass} took rooms {taken_classes}")
+#        available_classes -= taken_classes
+#    return available_classes
 
 
 async def download_htmls() -> dict[str, str]:
@@ -100,10 +113,10 @@ def run():
     ### Info to fill 
     """
     dicter = {
-        '---':0, 'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
+        '':0, 'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     }
     dicter2 = {
-        '---':0, '07:20 - 08:00': 15, '08:00 - 08:45': 1, '08:45 - 09:30': 2, '09:45 - 10:30': 3, '10:30 - 11:15': 4,
+        '':0, '07:20 - 08:00': 15, '08:00 - 08:45': 1, '08:45 - 09:30': 2, '09:45 - 10:30': 3, '10:30 - 11:15': 4,
         '11:30 - 12:15': 5, '12:15 - 13:00': 6, '13:30 - 14:15': 7, '14:15 - 15:00': 8, '15:00 - 15:45': 9,
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
@@ -119,9 +132,10 @@ def run():
 
         with st.spinner("Fetching Data..."):
             htmls = asyncio.run(download_htmls())
-        with st.spinner('Analysing Data...'):
-            rooms = sorted(get_available_classes_on_date(htmls, day, hour))
-        st.info('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+        bar = st.progress(0, text='Analysing Data...')
+        with bar:
+            rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
+        st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
         if hour == 0:
             hour = 15
