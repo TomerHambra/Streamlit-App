@@ -1,3 +1,10 @@
 # Room Finder For Reali School
 
-more info soon^TM
+## Collecting The Data Using Async
+
+
+## Contributors
+Roy Sigman
+Ilay Nadler
+Alon Krymgand
+Tomer Hambra
