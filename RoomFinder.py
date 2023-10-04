@@ -1,6 +1,5 @@
 import streamlit as st
 import asyncio
-from datetime import date, datetime
 from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
@@ -74,11 +73,15 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int) -> set[
     ) 
     n = len(htmls)
     i = 1
-    bar = st.progress(0, text='Analysing Data...')
+    bar = st.progress(0, 'Analysing Data...')
     with bar:
         for html in htmls:
             available_classes -= get_taken_classes_on_date(html, day, hour)
-            bar.progress(i*100//n) 
+            bar.progress(i*100//n)
+            i += 1
+        bar.empty()
+    
+            
     return available_classes
 
 #
@@ -112,6 +115,7 @@ def run():
     st.title('Room Finder')
     st.subheader('Pick Your Time', divider='red')
     st.caption('Give information about the day and the hour for which you want to find a room.')
+    add_vertical_space(3)
     dicter = {
         '':0, 'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     }
