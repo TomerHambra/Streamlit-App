@@ -1,7 +1,7 @@
 import streamlit as st
 import asyncio
 from datetime import date, datetime
-
+from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
 
@@ -110,10 +110,8 @@ async def download_htmls() -> dict[str, str]:
 
 def run():
     st.title('Room Finder')
-    """
-
-    ### Info to fill 
-    """
+    st.subheader('Pick Your Time', divider='red')
+    st.caption('Give information about the day and the hour for which you want to find a room.')
     dicter = {
         '':0, 'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     }
