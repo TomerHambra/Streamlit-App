@@ -133,6 +133,7 @@ def run():
         if day == 15:
             day = 0
 
+        unavailable_site_error = False
         with st.spinner("Fetching Data..."):
             try:
                 htmls = asyncio.run(download_htmls())
