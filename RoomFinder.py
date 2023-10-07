@@ -59,12 +59,14 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
 
     row = table.find_all("tr")[hour + 1]
     cells = row.find_all("td", {"class": "TTCell"})
-    cell = cells[day]
-
-    return {
-        get_class_name_from_lesson(lesson)
-        for lesson in cell.find_all("div", {"class": "TTLesson"})
-    }
+    print(f'len of cells : {len(cells)}, day = {day}, hour = {hour}')
+    if len(cells) > 0:
+        cell = cells[day]
+        return {
+            get_class_name_from_lesson(lesson)
+            for lesson in cell.find_all("div", {"class": "TTLesson"})
+        }
+    return set()
 
 # THIS FUNCTIONS IS A BIT FASTER
 def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
