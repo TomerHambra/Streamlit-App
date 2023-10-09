@@ -4,13 +4,12 @@ from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
 
-BASE_URL = "https://beitbiram.iscool.co.il/default.aspx"
 
 
 async def get_initial_form_data(
-    client: httpx.AsyncClient,
+    client: httpx.AsyncClient, url: str
 ) -> tuple[dict[str, str], list[str]]:
-    response = await client.get(BASE_URL)
+    response = await client.get(url)
     soup = BeautifulSoup(response.text, "lxml")
 
     tags = {
@@ -27,6 +26,7 @@ async def get_class_data(
     tags: dict[str, str],
     class_id: str,
     htmls: dict[str, str],
+    url: str
 ):
     tags = tags.copy()
     tags.update(
@@ -36,7 +36,7 @@ async def get_class_data(
         }
     )
 
-    response = await client.post(BASE_URL, data=tags, headers={"encoding": "utf8"})
+    response = await client.post(url, data=tags, headers={"encoding": "utf8"})
     htmls[class_id] = response.text
 
 
@@ -100,23 +100,33 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
 #    return available_classes
 
 
-async def download_htmls() -> dict[str, str]:
+async def download_htmls(url: str) -> dict[str, str]:
     async with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
-        tags, class_ids = await get_initial_form_data(client)
+        tags, class_ids = await get_initial_form_data(client, url)
         client.cookies.clear()
 
         htmls = dict[str, str]()
         async with asyncio.TaskGroup() as tg:
             for class_id in class_ids:
-                tg.create_task(get_class_data(client, tags, class_id, htmls))
+                tg.create_task(get_class_data(client, tags, class_id, htmls, url))
 
         return htmls
 
 def run():
+    urls = {
+        '':'',
+        'Reali - Beit Biram':'https://beitbiram.iscool.co.il/default.aspx', 
+        'Rabinky':'https://rabinky.iscool.co.il/default.aspx'
+    }
     st.title('Room Finder')
+    st.subheader('Pick Your School', divider='red')
+    st.caption('Choose the school in which you want to find rooms.')
+    add_vertical_space(1)
+    base_url = urls[st.selectbox('Schools', urls.keys())]
+    add_vertical_space(4)
     st.subheader('Pick Your Time', divider='red')
     st.caption('Give information about the day and the hour for which you want to find a room.')
-    add_vertical_space(3)
+    add_vertical_space(1)
     dicter = {
         '':0, 'Sunday': 15, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
     }
@@ -125,20 +135,20 @@ def run():
         '11:30 - 12:15': 5, '12:15 - 13:00': 6, '13:30 - 14:15': 7, '14:15 - 15:00': 8, '15:00 - 15:45': 9,
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
-
+    
     day = dicter[st.selectbox('Days', dicter.keys())]
     hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
-    if day and hour:
+    if day and hour and base_url != '':
         if hour == 15:
             hour = 0
         if day == 15:
             day = 0
-
+        
         unavailable_site_error = False
         with st.spinner("Fetching Data..."):
             try:
-                htmls = asyncio.run(download_htmls())
+                htmls = asyncio.run(download_htmls(base_url))
             except httpx.ConnectTimeout:
                 st.error('Site Is Unavailable (it\'s not our fault).')
                 unavailable_site_error = True
