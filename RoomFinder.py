@@ -26,13 +26,14 @@ async def get_class_data(
     tags: dict[str, str],
     class_id: str,
     htmls: dict[str, str],
-    url: str
+    url: str,
+    schoolid: int
 ):
     tags = tags.copy()
     tags.update(
         {
-            "dnn$ctr7126$TimeTableView$ClassesList": class_id,
-            "dnn$ctr7126$TimeTableView$ControlId": "8",
+            f"dnn$ctr{schoolid}$TimeTableView$ClassesList": class_id,
+            f"dnn$ctr{schoolid}$TimeTableView$ControlId": "8",
         }
     )
 
@@ -59,7 +60,7 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
 
     row = table.find_all("tr")[hour + 1]
     cells = row.find_all("td", {"class": "TTCell"})
-    if len(cells) > 0:
+    if len(cells) > 0 and day in range(len(cells)):
         cell = cells[day]
         return {
             get_class_name_from_lesson(lesson)
@@ -100,7 +101,7 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
 #    return available_classes
 
 
-async def download_htmls(url: str) -> dict[str, str]:
+async def download_htmls(url: str, schoolid: str) -> dict[str, str]:
     async with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
         tags, class_ids = await get_initial_form_data(client, url)
         client.cookies.clear()
@@ -108,7 +109,7 @@ async def download_htmls(url: str) -> dict[str, str]:
         htmls = dict[str, str]()
         async with asyncio.TaskGroup() as tg:
             for class_id in class_ids:
-                tg.create_task(get_class_data(client, tags, class_id, htmls, url))
+                tg.create_task(get_class_data(client, tags, class_id, htmls, url, schoolid))
 
         return htmls
 
@@ -117,6 +118,10 @@ def run():
         '':'',
         'Reali - Beit Biram':'https://beitbiram.iscool.co.il/default.aspx', 
         'Rabinky':'https://rabinky.iscool.co.il/default.aspx'
+    }
+    schoolids = {
+        'https://beitbiram.iscool.co.il/default.aspx':7126,
+        'https://rabinky.iscool.co.il/default.aspx':7121
     }
     st.title('Room Finder')
     st.subheader('Pick Your School', divider='red')
@@ -148,7 +153,7 @@ def run():
         unavailable_site_error = False
         with st.spinner("Fetching Data..."):
             try:
-                htmls = asyncio.run(download_htmls(base_url))
+                htmls = asyncio.run(download_htmls(base_url, schoolids[base_url]))
             except httpx.ConnectTimeout:
                 st.error('Site Is Unavailable (it\'s not our fault).')
                 unavailable_site_error = True
