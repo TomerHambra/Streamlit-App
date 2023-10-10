@@ -27,13 +27,14 @@ async def get_class_data(
     class_id: str,
     htmls: dict[str, str],
     url: str,
-    schoolid: int
+    schoolid: int,
+    control: str
 ):
     tags = tags.copy()
     tags.update(
         {
             f"dnn$ctr{schoolid}$TimeTableView$ClassesList": class_id,
-            f"dnn$ctr{schoolid}$TimeTableView$ControlId": "8",
+            f"dnn$ctr{schoolid}$TimeTableView$ControlId": control,
         }
     )
 
@@ -42,8 +43,8 @@ async def get_class_data(
 
 
 def get_class_name_from_lesson(lesson_tag: Tag) -> str:
-    klass = lesson_tag.find("b").next_sibling.text.strip()[1:-1]
-    return klass
+    return lesson_tag.find("b").next_sibling.text.strip()[1:-1]
+
 
 
 def get_all_class_names(html: str) -> set[str]:
@@ -58,15 +59,13 @@ def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
     soup = BeautifulSoup(html, "lxml")
     table = soup.find("table", {"class": "TTTable"})
 
-    row = table.find_all("tr")[hour + 1]
+    row = table.find_all("tr")[hour+1]
     cells = row.find_all("td", {"class": "TTCell"})
     if len(cells) > 0 and day in range(len(cells)):
         cell = cells[day]
-        return {
-            get_class_name_from_lesson(lesson)
-            for lesson in cell.find_all("div", {"class": "TTLesson"})
-        }
-    # print(f'len of cells : {len(cells)}, day = {day}, hour = {hour}')
+        lessons = cell.find_all("div", {"class": "TTLesson"})
+        return { get_class_name_from_lesson(lesson) for lesson in lessons }
+    print(f'row: {row}, cells: {cells}, day = {day}, hour = {hour+1}')
     return set()
 
 # THIS FUNCTIONS IS A BIT FASTER
@@ -101,7 +100,7 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
 #    return available_classes
 
 
-async def download_htmls(url: str, schoolid: str) -> dict[str, str]:
+async def download_htmls(url: str, schoolid: str, control: str) -> dict[str, str]:
     async with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
         tags, class_ids = await get_initial_form_data(client, url)
         client.cookies.clear()
@@ -109,7 +108,7 @@ async def download_htmls(url: str, schoolid: str) -> dict[str, str]:
         htmls = dict[str, str]()
         async with asyncio.TaskGroup() as tg:
             for class_id in class_ids:
-                tg.create_task(get_class_data(client, tags, class_id, htmls, url, schoolid))
+                tg.create_task(get_class_data(client, tags, class_id, htmls, url, schoolid, control))
 
         return htmls
 
@@ -122,6 +121,10 @@ def run():
     schoolids = {
         'https://beitbiram.iscool.co.il/default.aspx':7126,
         'https://rabinky.iscool.co.il/default.aspx':7121
+    }
+    control = {
+        'https://beitbiram.iscool.co.il/default.aspx':'1',
+        'https://rabinky.iscool.co.il/default.aspx':'8'
     }
     st.title('Room Finder')
     st.subheader('Pick Your School', divider='red')
@@ -140,7 +143,6 @@ def run():
         '11:30 - 12:15': 5, '12:15 - 13:00': 6, '13:30 - 14:15': 7, '14:15 - 15:00': 8, '15:00 - 15:45': 9,
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
-    
     day = dicter[st.selectbox('Days', dicter.keys())]
     hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
@@ -153,7 +155,7 @@ def run():
         unavailable_site_error = False
         with st.spinner("Fetching Data..."):
             try:
-                htmls = asyncio.run(download_htmls(base_url, schoolids[base_url]))
+                htmls = asyncio.run(download_htmls(base_url, schoolids[base_url], control[base_url]))
             except httpx.ConnectTimeout:
                 st.error('Site Is Unavailable (it\'s not our fault).')
                 unavailable_site_error = True
