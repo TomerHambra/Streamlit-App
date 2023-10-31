@@ -7,4 +7,3 @@ httpx==0.25.0
 bs4
 lxml
 streamlit-extras
-re
