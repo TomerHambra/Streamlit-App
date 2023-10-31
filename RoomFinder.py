@@ -57,19 +57,33 @@ def get_all_class_names(html: str) -> set[str]:
 def extract_changes_table(cells: any, classes: set[str], day: int) -> set[str]:
     if len(cells) > 0 and day in range(len(cells)):
         cell = cells[day]
-        changes = cell.find_all("table").tbody.find_all("tr")
+        changes = cell.table
+        if changes:
+            changes = changes.find_all("tr")
+            if changes:
+                classes = handle_fill_changes(changes, classes)
+    return classes
 
 
 def handle_fill_changes(changes: any, classes: set[str]) -> set[str]:
-    swaps = changes.find_all('td', {'class': 'TableFillChange'})
-    for swap in swaps:
-        clas = int(re.findall(r'\b\d+\b', "he33llo 42 I'm a 32 string 30")[-1])
-        if clas > 100:
-            classes -= {str(clas)}
-    
+    for change in changes:
+        swaps = change.find_all('td', {'class': 'TableFillChange'})
+        if not swaps: continue
+        swap = swaps[0].text
+        ind = swap.find(':')
+        if ind != -1:
+            ind += 2
+            classes -= {swap[ind:]}
+        else:
+            nums = re.findall(r'\b\d+\b', swap)
+            if not nums: continue
+            clas = int(nums[-1])
+            if clas > 100:
+                classes -= {str(clas)}
     return classes
 
-def get_taken_classes_on_date(html: str, day: int, cells: any) -> set[str]:
+
+def get_taken_classes_on_date(day: int, cells: any) -> set[str]:
     if len(cells) > 0 and day in range(len(cells)):
         cell = cells[day]
         lessons = cell.find_all("div", {"class": "TTLesson"})
@@ -90,12 +104,12 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
             table = soup.find("table", {"class": "TTTable"})
             row = table.find_all("tr")[hour+1]
             cells = row.find_all("td", {"class": "TTCell"})
-            available_classes -= get_taken_classes_on_date(html, day, cells)
+            available_classes -= get_taken_classes_on_date(day, cells)
+            available_classes = extract_changes_table(cells, available_classes, day)
             bar.progress(i*100//n, 'Analysing Data...')
             i += 1
         bar.empty()
     
-            
     return available_classes
 
 #
@@ -136,7 +150,7 @@ def run():
         'https://rabinky.iscool.co.il/default.aspx':7121
     }
     control = {
-        'https://beitbiram.iscool.co.il/default.aspx':'1',
+        'https://beitbiram.iscool.co.il/default.aspx':'8',
         'https://rabinky.iscool.co.il/default.aspx':'8'
     }
     st.title('Room Finder')
