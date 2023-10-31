@@ -3,7 +3,7 @@ import asyncio
 from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
-
+import re
 
 
 async def get_initial_form_data(
@@ -54,18 +54,27 @@ def get_all_class_names(html: str) -> set[str]:
         for tag in soup.find_all("div", {"class": "TTLesson"})
     }
 
+def extract_changes_table(cells: any, classes: set[str], day: int) -> set[str]:
+    if len(cells) > 0 and day in range(len(cells)):
+        cell = cells[day]
+        changes = cell.find_all("table").tbody.find_all("tr")
 
-def get_taken_classes_on_date(html: str, day: int, hour: int) -> set[str]:
-    soup = BeautifulSoup(html, "lxml")
-    table = soup.find("table", {"class": "TTTable"})
 
-    row = table.find_all("tr")[hour+1]
-    cells = row.find_all("td", {"class": "TTCell"})
+def handle_fill_changes(changes: any, classes: set[str]) -> set[str]:
+    swaps = changes.find_all('td', {'class': 'TableFillChange'})
+    for swap in swaps:
+        clas = int(re.findall(r'\b\d+\b', "he33llo 42 I'm a 32 string 30")[-1])
+        if clas > 100:
+            classes -= {str(clas)}
+    
+    return classes
+
+def get_taken_classes_on_date(html: str, day: int, cells: any) -> set[str]:
     if len(cells) > 0 and day in range(len(cells)):
         cell = cells[day]
         lessons = cell.find_all("div", {"class": "TTLesson"})
         return { get_class_name_from_lesson(lesson) for lesson in lessons }
-    print(f'row: {row}, cells: {cells}, day = {day}, hour = {hour+1}')
+    # print(f'row: {row}, cells: {cells}, day = {day}, hour = {hour+1}')
     return set()
 
 # THIS FUNCTIONS IS A BIT FASTER
@@ -77,7 +86,11 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
     i = 1
     with bar:
         for html in htmls:
-            available_classes -= get_taken_classes_on_date(html, day, hour)
+            soup = BeautifulSoup(html, "lxml")
+            table = soup.find("table", {"class": "TTTable"})
+            row = table.find_all("tr")[hour+1]
+            cells = row.find_all("td", {"class": "TTCell"})
+            available_classes -= get_taken_classes_on_date(html, day, cells)
             bar.progress(i*100//n, 'Analysing Data...')
             i += 1
         bar.empty()
