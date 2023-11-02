@@ -191,6 +191,8 @@ def run():
             rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
             st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
+        
+        
         if hour == 0:
             hour = 15
         if day == 0:
