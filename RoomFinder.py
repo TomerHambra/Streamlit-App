@@ -54,18 +54,26 @@ def get_all_class_names(html: str) -> set[str]:
         for tag in soup.find_all("div", {"class": "TTLesson"})
     }
 
-def extract_changes_table(cells: any, classes: set[str], day: int) -> set[str]:
-    if len(cells) > 0 and day in range(len(cells)):
-        cell = cells[day]
-        changes = cell.table
+def extract_changes_table(cell: str, day: int) -> set[str]:
+    classes = set()
+    changes = cell.table
+    if changes:
+        changes = changes.find_all("tr")
         if changes:
-            changes = changes.find_all("tr")
-            if changes:
-                classes = handle_fill_changes(changes, classes)
+            # classes = handle_fill_changes(changes, classes)
+            classes = get_changes(changes)
     return classes
 
+# def get_changes(changes: set[str]):
+#     classes = {}
+#     print(changes)
+    
+#     return classes
+    
 
-def handle_fill_changes(changes: any, classes: set[str]) -> set[str]:
+
+def get_changes(changes: set[str]) -> set[str]:
+    classes = set()
     for change in changes:
         swaps = change.find_all('td', {'class': 'TableFillChange'})
         if not swaps: continue
@@ -73,23 +81,18 @@ def handle_fill_changes(changes: any, classes: set[str]) -> set[str]:
         ind = swap.find(':')
         if ind != -1:
             ind += 2
-            classes -= {swap[ind:]}
+            classes.add(swap[ind:])
         else:
             nums = re.findall(r'\b\d+\b', swap)
             if not nums: continue
             clas = int(nums[-1])
             if clas > 100:
-                classes -= {str(clas)}
+                classes.add(str(clas))
     return classes
 
-
-def get_taken_classes_on_date(day: int, cells: any) -> set[str]:
-    if len(cells) > 0 and day in range(len(cells)):
-        cell = cells[day]
-        lessons = cell.find_all("div", {"class": "TTLesson"})
-        return { get_class_name_from_lesson(lesson) for lesson in lessons }
-    # print(f'row: {row}, cells: {cells}, day = {day}, hour = {hour+1}')
-    return set()
+def get_taken_classes_on_date(cell: str) -> set[str]:
+    lessons = cell.find_all("div", {"class": "TTLesson"})
+    return { get_class_name_from_lesson(lesson) for lesson in lessons }
 
 # THIS FUNCTIONS IS A BIT FASTER
 def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
@@ -102,10 +105,10 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
         for html in htmls:
             soup = BeautifulSoup(html, "lxml")
             table = soup.find("table", {"class": "TTTable"})
-            row = table.find_all("tr")[hour+1]
-            cells = row.find_all("td", {"class": "TTCell"})
-            available_classes -= get_taken_classes_on_date(day, cells)
-            available_classes = extract_changes_table(cells, available_classes, day)
+            row = table.find_all("tr", {'valign': 'top'})[hour]
+            cell = row.find_all("td", {"class": "TTCell"})[day]
+            available_classes -= get_taken_classes_on_date(cell)
+            available_classes -= extract_changes_table(cell, day)
             bar.progress(i*100//n, 'Analysing Data...')
             i += 1
         bar.empty()
@@ -126,17 +129,17 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) ->
 #        available_classes -= taken_classes
 #    return available_classes
 
-
 async def download_htmls(url: str, schoolid: str, control: str) -> dict[str, str]:
     async with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
         tags, class_ids = await get_initial_form_data(client, url)
         client.cookies.clear()
-
         htmls = dict[str, str]()
         async with asyncio.TaskGroup() as tg:
             for class_id in class_ids:
                 tg.create_task(get_class_data(client, tags, class_id, htmls, url, schoolid, control))
-
+        # for clas in htmls.keys():
+        #     with open(f'html{clas}.txt', 'w') as f:
+        #         f.write(htmls[clas])
         return htmls
 
 def run():
