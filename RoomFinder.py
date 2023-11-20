@@ -95,7 +95,7 @@ def get_taken_classes_on_date(cell: str) -> set[str]:
     return { get_class_name_from_lesson(lesson) for lesson in lessons }
 
 # THIS FUNCTIONS IS A BIT FASTER
-def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, rooms) -> set[str]:
+def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, rooms, div=1, divi=0) -> set[str]:
     available_classes = rooms
     if len(rooms) == 0:
         available_classes = set().union(
@@ -111,9 +111,9 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, ro
         cell = row.find_all("td", {"class": "TTCell"})[day]
         available_classes -= get_taken_classes_on_date(cell)
         available_classes -= extract_changes_table(cell, day)
-        if bar: bar.progress(i*100//n, 'Analysing Data...')
+        if bar: bar.progress((divi*100)//div + (i*100)//(n)//(div), 'Analysing Data...')
         i += 1
-    if bar: bar.empty()
+    if div == 1: bar.empty()
     
     return available_classes
 
@@ -176,7 +176,7 @@ def run():
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
     rang = st.checkbox("Range of Hours")
-    if rang:
+    if not rang:
         day = dicter[st.selectbox('Days', dicter.keys())]
         hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
@@ -208,7 +208,7 @@ def run():
     else:
         day = dicter[st.selectbox('Days', dicter.keys())]
         shour = dicter2[st.selectbox('Start Hour', dicter2.keys())]
-        thour = dicter2[st.selectbox('End Hours', dicter2.keys())]
+        thour = dicter2[st.selectbox('End Hours', dicter2.keys())] + 1
         
 
         if day and shour and shour <= thour and base_url != '':
@@ -225,6 +225,8 @@ def run():
                 bar = st.progress(0, 'Analysing Data...')
                 lis = dicter2.keys()
                 rooms = set()
+                n = thour - shour
+                i = 0
                 for key in itertools.islice(lis, shour, thour):
                     hour = dicter2[key]
                     if hour == 15:
@@ -232,15 +234,15 @@ def run():
                     if day == 15:
                         day = 0
 
-                    print(hour)
-                    b = 0
-                    rooms = get_available_classes_on_date(htmls.values(), day, hour, b, rooms)
+                    rooms = get_available_classes_on_date(htmls.values(), day, hour, bar, rooms, n, i)
+                    i += 1
                     
                     if hour == 0:
                         hour = 15
                     if day == 0:
                         day = 15
-
+                bar.empty()
+                rooms = sorted(rooms)
                 st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
             
             
