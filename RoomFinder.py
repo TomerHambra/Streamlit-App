@@ -3,7 +3,7 @@ import asyncio
 from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
-import re
+import re, itertools
 
 
 async def get_initial_form_data(
@@ -95,23 +95,25 @@ def get_taken_classes_on_date(cell: str) -> set[str]:
     return { get_class_name_from_lesson(lesson) for lesson in lessons }
 
 # THIS FUNCTIONS IS A BIT FASTER
-def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar) -> set[str]:
-    available_classes = set().union(
-        *(get_all_class_names(html) for html in htmls)
-    ) # NOTE: this function is slow af, need to fix it
+def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, rooms) -> set[str]:
+    available_classes = rooms
+    if len(rooms) == 0:
+        available_classes = set().union(
+            *(get_all_class_names(html) for html in htmls)
+        ) # NOTE: this function is slow af, need to fix it
+
     n = len(htmls)
     i = 1
-    with bar:
-        for html in htmls:
-            soup = BeautifulSoup(html, "lxml")
-            table = soup.find("table", {"class": "TTTable"})
-            row = table.find_all("tr", {'valign': 'top'})[hour]
-            cell = row.find_all("td", {"class": "TTCell"})[day]
-            available_classes -= get_taken_classes_on_date(cell)
-            available_classes -= extract_changes_table(cell, day)
-            bar.progress(i*100//n, 'Analysing Data...')
-            i += 1
-        bar.empty()
+    for html in htmls:
+        soup = BeautifulSoup(html, "lxml")
+        table = soup.find("table", {"class": "TTTable"})
+        row = table.find_all("tr", {'valign': 'top'})[hour]
+        cell = row.find_all("td", {"class": "TTCell"})[day]
+        available_classes -= get_taken_classes_on_date(cell)
+        available_classes -= extract_changes_table(cell, day)
+        if bar: bar.progress(i*100//n, 'Analysing Data...')
+        i += 1
+    if bar: bar.empty()
     
     return available_classes
 
@@ -173,33 +175,75 @@ def run():
         '11:30 - 12:15': 5, '12:15 - 13:00': 6, '13:30 - 14:15': 7, '14:15 - 15:00': 8, '15:00 - 15:45': 9,
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
-    day = dicter[st.selectbox('Days', dicter.keys())]
-    hour = dicter2[st.selectbox('Hours', dicter2.keys())]
+    rang = st.checkbox("Range of Hours")
+    if rang:
+        day = dicter[st.selectbox('Days', dicter.keys())]
+        hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
-    if day and hour and base_url != '':
-        if hour == 15:
-            hour = 0
-        if day == 15:
-            day = 0
-        
-        unavailable_site_error = False
-        with st.spinner("Fetching Data..."):
-            try:
-                htmls = asyncio.run(download_htmls(base_url, schoolids[base_url], control[base_url]))
-            except httpx.ConnectTimeout:
-                st.error('Site Is Unavailable (it\'s not our fault).')
-                unavailable_site_error = True
-        if not unavailable_site_error:    
-            bar = st.progress(0, 'Analysing Data...')
-            rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar))
-            st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+        if day and hour and base_url != '':
+            if hour == 15:
+                hour = 0
+            if day == 15:
+                day = 0
+            
+            unavailable_site_error = False
+            with st.spinner("Fetching Data..."):
+                try:
+                    htmls = asyncio.run(download_htmls(base_url, schoolids[base_url], control[base_url]))
+                except httpx.ConnectTimeout:
+                    st.error('Site Is Unavailable (it\'s not our fault).')
+                    unavailable_site_error = True
+            if not unavailable_site_error:    
+                bar = st.progress(0, 'Analysing Data...')
+                rooms = set()
+                rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar, rooms))
+                st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
 
+            
+            
+            if hour == 0:
+                hour = 15
+            if day == 0:
+                day = 15
+    else:
+        day = dicter[st.selectbox('Days', dicter.keys())]
+        shour = dicter2[st.selectbox('Start Hour', dicter2.keys())]
+        thour = dicter2[st.selectbox('End Hours', dicter2.keys())]
         
-        
-        if hour == 0:
-            hour = 15
-        if day == 0:
-            day = 15
+
+        if day and shour and shour <= thour and base_url != '':
+            unavailable_site_error = False
+            with st.spinner("Fetching Data..."):
+                try:
+                    htmls = asyncio.run(download_htmls(base_url, schoolids[base_url], control[base_url]))
+                except httpx.ConnectTimeout:
+                    st.error('Site Is Unavailable (it\'s not our fault).')
+                    unavailable_site_error = True
+            
+            
+            if not unavailable_site_error:    
+                bar = st.progress(0, 'Analysing Data...')
+                lis = dicter2.keys()
+                rooms = set()
+                for key in itertools.islice(lis, shour, thour):
+                    hour = dicter2[key]
+                    if hour == 15:
+                        hour = 0
+                    if day == 15:
+                        day = 0
+
+                    print(hour)
+                    b = 0
+                    rooms = get_available_classes_on_date(htmls.values(), day, hour, b, rooms)
+                    
+                    if hour == 0:
+                        hour = 15
+                    if day == 0:
+                        day = 15
+
+                st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+            
+            
 
 if __name__ == '__main__':
     run()
