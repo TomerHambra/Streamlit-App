@@ -144,6 +144,18 @@ async def download_htmls(url: str, schoolid: str, control: str) -> dict[str, str
         #         f.write(htmls[clas])
         return htmls
 
+def print_rooms(rooms: list[str]):
+    # st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+    good = []
+    meh = []
+    c = '\n'
+    l = [good.append(s) if good_room(s) else meh.append(s) for s in rooms]
+    st.success(f'Program found {len(good)} good rooms available: \n\n{c.join(f"- {room}" for room in good if not room == "")}')
+    st.warning(f'Program found {len(meh)} rooms that are probably locked, but you can still try them: \n\n{c.join(f"- {room}" for room in meh if not room == "")}')
+
+def good_room(s: str) -> bool:
+    return s.isnumeric() and int(s) < 600 and s[:2] != '50'
+
 def run():
     urls = {
         '':'',
@@ -176,8 +188,9 @@ def run():
         '15:45 - 16:30': 10, '16:30 - 17:15': 11, '17:15 - 18:00': 12, '18:00 - 18:45': 13, '18:45 - 18:00': 14
     }
     rang = st.checkbox("Range of Hours")
+    
+    day = dicter[st.selectbox('Days', dicter.keys())]
     if not rang:
-        day = dicter[st.selectbox('Days', dicter.keys())]
         hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
         if day and hour and base_url != '':
@@ -186,18 +199,18 @@ def run():
             if day == 15:
                 day = 0
             
-            unavailable_site_error = False
+            unavailable_site_error = False 
             with st.spinner("Fetching Data..."):
                 try:
                     htmls = asyncio.run(download_htmls(base_url, schoolids[base_url], control[base_url]))
-                except httpx.ConnectTimeout:
+                except httpx.ConnectTimeout: 
                     st.error('Site Is Unavailable (it\'s not our fault).')
                     unavailable_site_error = True
             if not unavailable_site_error:    
                 bar = st.progress(0, 'Analysing Data...')
                 rooms = set()
                 rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar, rooms))
-                st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
+                print_rooms(rooms)
 
             
             
@@ -206,7 +219,6 @@ def run():
             if day == 0:
                 day = 15
     else:
-        day = dicter[st.selectbox('Days', dicter.keys())]
         shour = dicter2[st.selectbox('Start Hour', dicter2.keys())]
         thour = dicter2[st.selectbox('End Hours', dicter2.keys())] + 1
         
@@ -243,8 +255,7 @@ def run():
                         day = 15
                 bar.empty()
                 rooms = sorted(rooms)
-                st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
-            
+                print_rooms(rooms)            
             
 
 if __name__ == '__main__':
