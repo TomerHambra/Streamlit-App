@@ -235,11 +235,11 @@ def run():
             
             if not unavailable_site_error:    
                 bar = st.progress(0, 'Analysing Data...')
-                lis = dicter2.keys()
+                lis = list(dicter2.keys())
                 rooms = set()
                 n = thour - shour
                 i = 0
-                for key in itertools.islice(lis, shour, thour):
+                for key in lis[shour+1 : thour+1]:
                     hour = dicter2[key]
                     if hour == 15:
                         hour = 0
