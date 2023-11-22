@@ -76,19 +76,64 @@ def get_changes(changes: set[str]) -> set[str]:
     classes = set()
     for change in changes:
         swaps = change.find_all('td', {'class': 'TableFillChange'})
-        if not swaps: continue
-        swap = swaps[0].text
-        ind = swap.find(':')
-        if ind != -1:
-            ind += 2
-            classes.add(swap[ind:])
-        else:
-            nums = re.findall(r'\b\d+\b', swap)
-            if not nums: continue
-            clas = int(nums[-1])
-            if clas > 100:
-                classes.add(str(clas))
+        if swaps:
+            classes = classes.union(handle_fills(swaps))
+            continue
+        swaps = change.find_all('td', {'class': 'TableEventChange'})
+        if swaps: 
+            classes = classes.union(handle_events(swaps))
+            continue
+        swaps = change.find_all('td', {'class': 'TableExamChange'})
+        if swaps: 
+            l = handle_exams(swaps)
+            classes = classes.union(l) 
     return classes
+
+def handle_exams(swaps) -> set[str]:
+    retu = set()
+    swap = swaps[0].text[::-1]
+    num = ''
+    found = False
+    for c in swap:
+        if c.isdigit():
+            num += c
+            found = True
+        elif found: break
+
+    clas = int(num[::-1])
+    if clas > 100: retu.add(str(clas))
+    return retu
+
+def handle_events(swaps) -> set[str]:
+    retu = set()
+    swap = swaps[0].text[::-1]
+    num = ''
+    found = False
+    for c in swap:
+        if c.isdigit():
+            num += c
+            found = True
+        elif found: break
+    if num == '': return set()
+    clas = int(num[::-1])
+    if clas > 100: retu.add(str(clas))
+    return retu
+
+def handle_fills(swaps) -> set[str]:
+    retu = set()
+    swap = swaps[0].text
+    ind = swap.find(':')
+    if ind != -1:
+        ind += 2
+        return set(swap[ind:])
+    nums = re.findall(r'\b\d+\b', swap)
+    if not nums: return retu
+    clas = int(nums[-1])
+    if clas > 100:
+        l = str(clas)
+        retu.add(l)
+    return retu
+
 
 def get_taken_classes_on_date(cell: str) -> set[str]:
     lessons = cell.find_all("div", {"class": "TTLesson"})
