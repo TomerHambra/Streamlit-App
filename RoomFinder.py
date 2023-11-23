@@ -87,6 +87,7 @@ def get_changes(changes: set[str]) -> set[str]:
         if swaps: 
             l = handle_exams(swaps)
             classes = classes.union(l) 
+    print(classes)
     return classes
 
 def handle_exams(swaps) -> set[str]:
@@ -114,7 +115,7 @@ def handle_events(swaps) -> set[str]:
             num += c
             found = True
         elif found: break
-    if num == '': return set()
+    if num == '': return retu
     clas = int(num[::-1])
     if clas > 100: retu.add(str(clas))
     return retu
@@ -125,7 +126,8 @@ def handle_fills(swaps) -> set[str]:
     ind = swap.find(':')
     if ind != -1:
         ind += 2
-        return set(swap[ind:])
+        retu.add(swap[ind:])
+        return retu
     nums = re.findall(r'\b\d+\b', swap)
     if not nums: return retu
     clas = int(nums[-1])
