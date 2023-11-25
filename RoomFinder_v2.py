@@ -3,9 +3,6 @@ import asyncio
 from streamlit_extras.add_vertical_space import add_vertical_space
 from bs4 import BeautifulSoup, Tag
 import httpx
-import os, git
-import shutil
-import tempfile
 
 def print_rooms(rooms: list[str]):
   # st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
@@ -19,17 +16,16 @@ def print_rooms(rooms: list[str]):
 def good_room(s: str) -> bool:
   return s.isnumeric() and int(s) < 600 and s[:2] != '50'
 
+rfurl = 'https://roomfinder.streamlit.app'
 def get_answer(schoolid: int, day: int, shour: int, thour: int) -> set[str]:
   global rfurl
-  with httpx.AsyncClient(headers={"encoding": "utf8"}) as client:
+  with httpx.Client(headers={"encoding": "utf8"}) as client:
     response = client.get(rfurl)
     soup = BeautifulSoup(response.text, "lxml")
-    tags = {
-        tag["id"]: tag.get("value")
-        for tag in soup.find_all("input")
-        if tag.get("value") is not None
-    }
-    
+    client.cookies.clear()
+    response = client.post(rfurl)
+    html = response.text
+    print(html)   
     
 
 
@@ -47,7 +43,6 @@ control = {
   'https://rabinky.iscool.co.il/default.aspx':'8'
 }
 
-rfurl = 'https://roomfinder.streamlit.app'
 
 def run():
   global urls, schoolids, control
@@ -73,6 +68,7 @@ def run():
   
   day = dicter[st.selectbox('Days', dicter.keys())]
   if not rang:
+    get_answer(1, 2, 3 ,4)
     hour = dicter2[st.selectbox('Hours', dicter2.keys())]
 
     if day and hour and base_url != '':
@@ -114,7 +110,7 @@ def run():
         if day == 15:
           day = 0
 
-        rooms = get_answer()
+        get_answer()
         i += 1
         
         if hour == 0:
@@ -123,4 +119,7 @@ def run():
           day = 15
       bar.empty()
       rooms = sorted(rooms)
-      print_rooms(rooms)     
+      print_rooms(rooms)
+
+if __name__ == "__main__":
+  run()
