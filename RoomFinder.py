@@ -87,7 +87,6 @@ def get_changes(changes: set[str]) -> set[str]:
         if swaps: 
             l = handle_exams(swaps)
             classes = classes.union(l) 
-    print(classes)
     return classes
 
 def handle_exams(swaps) -> set[str]:
@@ -100,7 +99,7 @@ def handle_exams(swaps) -> set[str]:
             num += c
             found = True
         elif found: break
-
+    if num == '': return retu
     clas = int(num[::-1])
     if clas > 100: retu.add(str(clas))
     return retu
@@ -204,6 +203,7 @@ def good_room(s: str) -> bool:
     return s.isnumeric() and int(s) < 600 and s[:2] != '50'
 
 def run():
+    st.set_page_config(page_title='Room Finder')
     urls = {
         '':'',
         'Reali - Beit Biram':'https://beitbiram.iscool.co.il/default.aspx', 
