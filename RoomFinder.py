@@ -3,7 +3,9 @@ import asyncio
 from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
-import re, itertools, datetime
+import re, itertools
+from datetime import datetime, time
+import pytz # $ pip install pytz
 
 
 async def get_initial_form_data(
@@ -236,7 +238,8 @@ def run():
     }
     rang = st.checkbox("Range of Hours")
     
-    now = datetime.datetime.now()
+    tz = pytz.timezone('Asia/Jerusalem') # <- put your local timezone here
+    now = datetime.now(tz)
     today = now.weekday()+2
     today = today
     now = str(now.hour) + ':' + str(now.minute)+chr(0x100fff)
