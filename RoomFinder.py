@@ -274,9 +274,6 @@ def run():
                 rooms = set()
                 rooms = sorted(get_available_classes_on_date(htmls.values(), day, hour, bar, rooms))
                 print_rooms(rooms)
-
-            
-            
             if hour == 0:
                 hour = 15
             if day == 0:
