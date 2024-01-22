@@ -3,7 +3,7 @@ import asyncio
 from streamlit_extras.add_vertical_space import add_vertical_space
 import httpx
 from bs4 import BeautifulSoup, Tag
-import re, itertools
+import re, itertools, datetime
 
 
 async def get_initial_form_data(
@@ -221,7 +221,7 @@ def run():
     st.subheader('Pick Your School', divider='red')
     st.caption('Choose the school in which you want to find rooms.')
     add_vertical_space(1)
-    base_url = urls[st.selectbox('Schools', urls.keys())]
+    base_url = urls[st.selectbox('Schools', urls.keys(), index=1)]
     add_vertical_space(4)
     st.subheader('Pick Your Time', divider='red')
     st.caption('Give information about the day and the hour for which you want to find a room.')
@@ -236,9 +236,22 @@ def run():
     }
     rang = st.checkbox("Range of Hours")
     
-    day = dicter[st.selectbox('Days', dicter.keys())]
+    now = datetime.datetime.now()
+    today = now.weekday()+2
+    today = today
+    now = str(now.hour) + ':' + str(now.minute)+chr(0x100fff)
+    if len(now) < 6:
+        now = '0'+now
+    lis = list(dicter2.keys())
+    lis.append(now)
+    lis.sort()
+    print(lis)
+    now = lis.index(now)-1
+    now = now
+    print(now, today)
+    day = dicter[st.selectbox('Days', dicter.keys(), index=today)]
     if not rang:
-        hour = dicter2[st.selectbox('Hours', dicter2.keys())]
+        hour = dicter2[st.selectbox('Hours', dicter2.keys(), index=now)]
 
         if day and hour and base_url != '':
             if hour == 15:
@@ -266,8 +279,8 @@ def run():
             if day == 0:
                 day = 15
     else:
-        shour = dicter2[st.selectbox('Start Hour', dicter2.keys())]
-        thour = dicter2[st.selectbox('End Hours', dicter2.keys())] + 1
+        shour = dicter2[st.selectbox('Start Hour', dicter2.keys(), index=now)]
+        thour = dicter2[st.selectbox('End Hours', dicter2.keys(), index=now+1)] + 1
         
 
         if day and shour and shour <= thour and base_url != '':
