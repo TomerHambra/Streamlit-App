@@ -284,8 +284,10 @@ def run():
     else:
         shour = dicter2[st.selectbox('Start Hour', dicter2.keys(), index=now)]
         thour = dicter2[st.selectbox('End Hours', dicter2.keys(), index=now+1)] + 1
-        
-
+        if shour == 15:
+            shour = 0
+        if thour == 16:
+            thour = 0
         if day and shour and shour <= thour and base_url != '':
             unavailable_site_error = False
             with st.spinner("Fetching Data..."):
@@ -319,6 +321,10 @@ def run():
                 bar.empty()
                 rooms = sorted(rooms)
                 print_rooms(rooms)            
+        if shour == 0:
+            shour = 15
+        if thour == 1:
+            thour = 15
             
 
 if __name__ == '__main__':
