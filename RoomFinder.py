@@ -155,7 +155,7 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, ro
     for html in htmls:
         soup = BeautifulSoup(html, "lxml")
         table = soup.find("table", {"class": "TTTable"})
-        row = table.find_all("tr", {'valign': 'top'})[hour]
+        row = table.find_all("tr", {"valign": "top"})[hour]
         cell = row.find_all("td", {"class": "TTCell"})[day]
         available_classes -= get_taken_classes_on_date(cell)
         available_classes -= extract_changes_table(cell, day)
