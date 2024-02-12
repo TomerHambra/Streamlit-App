@@ -155,6 +155,9 @@ def get_available_classes_on_date(htmls: list[str], day: int, hour: int, bar, ro
     for html in htmls:
         soup = BeautifulSoup(html, "lxml")
         table = soup.find("table", {"class": "TTTable"})
+        if not table: 
+            print(f"Failed to find TTTable on page #{i}/{n}")
+            continue
         row = table.find_all("tr", {"valign": "top"})[hour]
         cell = row.find_all("td", {"class": "TTCell"})[day]
         available_classes -= get_taken_classes_on_date(cell)
@@ -191,6 +194,7 @@ async def download_htmls(url: str, schoolid: str, control: str) -> dict[str, str
         #     with open(f'html{clas}.txt', 'w') as f:
         #         f.write(htmls[clas])
         return htmls
+
 
 def print_rooms(rooms: list[str]):
     # st.success('Program found {} rooms available: \n\n{}'.format(len(rooms), '\n'.join(f'- {room}' for room in rooms if not room == "")))
